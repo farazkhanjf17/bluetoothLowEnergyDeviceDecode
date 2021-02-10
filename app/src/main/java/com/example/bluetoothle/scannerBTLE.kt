@@ -23,7 +23,7 @@ data class scannerBTLE(var mainActivity: MainActivity, var scanPeriod: Int, val 
     var mBluetoothAdapter : BluetoothAdapter? = null
     var mBluetoothManager : BluetoothManager? = null
     private var mScanner: BluetoothLeScanner? = null
-    //var address : String = "E0:80:9E:1C:63:45"
+    var addressPillBox : String = "E0:80:9E:1C:63:45"
     var address : String = "78:04:73:C3:33:10"
 
     var mScanSettings : ScanSettings? = null
@@ -58,7 +58,7 @@ data class scannerBTLE(var mainActivity: MainActivity, var scanPeriod: Int, val 
     fun getScanFilters ()
     {
 
-        val scanFilterMac = ScanFilter.Builder().setDeviceAddress(address).build()
+        val scanFilterMac = ScanFilter.Builder().setDeviceAddress(addressPillBox).build()
         listFilter.add(scanFilterMac)
 
     }
@@ -100,9 +100,11 @@ data class scannerBTLE(var mainActivity: MainActivity, var scanPeriod: Int, val 
         else{
             mScanner!!.stopScan(mScanCallback)
             mainActivity.printDistinct()
+            Toast.makeText(mainActivity.applicationContext, "Bluetooth Scan Turned off", Toast.LENGTH_LONG).show()
         }
     }
 
+    //mLeScanCallBacks is depricated
     private val mLeScanCallback =
         LeScanCallback { device, rssi, scanRecord ->
 
@@ -112,6 +114,9 @@ data class scannerBTLE(var mainActivity: MainActivity, var scanPeriod: Int, val 
             }
 
         }
+
+
+
     private val mScanCallback = object : ScanCallback()
     {
         override fun onScanResult(callbackType: Int, result: ScanResult) {

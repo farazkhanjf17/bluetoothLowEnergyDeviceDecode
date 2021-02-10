@@ -34,7 +34,7 @@ class CustomAdapter(val userList: ArrayList<BTLEDevice>) : RecyclerView.Adapter<
             val textViewRSSI = itemView.findViewById(R.id.lblDeviceRSSI) as TextView
             val textViewMAC = itemView.findViewById(R.id.lblDeviceMAC) as TextView
 
-            textViewMAC.text = "Name    :" + user.BTDevice.name.toString()
+            textViewMAC.text = "Name    :" + if (user.BTDevice.name != null ) user.BTDevice.name.toString() else  "Name Not Found"
             textViewRSSI.text = "address :" +user.BTDevice.address.toString()
             textViewName.text ="........................."
         }

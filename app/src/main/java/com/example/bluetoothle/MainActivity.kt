@@ -11,26 +11,39 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import java.math.BigInteger
+import java.nio.charset.StandardCharsets.UTF_16
+import java.nio.charset.StandardCharsets.UTF_8
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.experimental.and
 
 
 class MainActivity : AppCompatActivity() {
 
     var scannerbt : scannerBTLE? = null
     var deviceList: ArrayList<BTLEDevice> = ArrayList<BTLEDevice>()
-    var servicesList: ArrayList<BluetoothGattService> = ArrayList<BluetoothGattService>()
     var recyclerView : RecyclerView? = null
     var mBluetoothAdapter : BluetoothAdapter? = null
     var mBluetoothManager : BluetoothManager? = null
     var mBluetoothGatt: BluetoothGatt? = null
     var mDescriptor : BluetoothGattDescriptor? = null
-    var address : String = "78:04:73:C3:33:10"
-    var addressPillbox : String = "E0:80:9E:1C:63:45"
-    var serviceURIRequiired : String = "cdeacd80-5235-4c07-8846-93a37ee6b86d"
 
+    var characteristicsB : BluetoothGattCharacteristic? = null
+    var characteristicsA : BluetoothGattCharacteristic? = null
+
+    var serviceFour        : String = "6e400001-b5a3-f393-e0a9-e50e24dcca9f"
+    var characteristicsZero : String = "6e400002-b5a3-f393-e0a9-e50e24dcca9f"
+    var characteristicsOne : String = "6e400003-b5a3-f393-e0a9-e50e24dcca9f"
+
+    val commandToWrite = byteArrayOf(0x07.toByte(), 0x01.toByte(), 0x01.toByte(), 0xf7.toByte())
+    val commandToWrite1 = byteArrayOf(0x07.toByte(), 0x01.toByte(), 0x01.toByte(), 0xf7.toByte())
+    val commandToWrite2 = byteArrayOf(0x07.toByte(), 0x01.toByte(), 0x01.toByte(), 0xf7.toByte())
+    val commandToWrite3 = byteArrayOf(0x07.toByte(), 0x01.toByte(), 0x01.toByte(), 0xf7.toByte())
+    val commandToWrite4 = byteArrayOf(0x07.toByte(), 0x01.toByte(), 0x01.toByte(), 0xf7.toByte())
+
+    var servicesList: ArrayList<BluetoothGattService> = ArrayList<BluetoothGattService>()
+    var Characteristicslist = mutableListOf<BluetoothGattCharacteristic>()
+
+    var goodToWrite : Boolean = false
 
     var tv : TextView? = null
 
@@ -39,9 +52,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
         tv = findViewById(R.id.tvReadings)
         recyclerView = findViewById(R.id.rvDevices) as RecyclerView
         recyclerView!!.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+
         this.mBluetoothManager = this.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?
         this.mBluetoothAdapter = mBluetoothManager!!.adapter
 
@@ -50,7 +65,7 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun setUpBTLEScanner() {
-        scannerbt = scannerBTLE(this, 5000, -100)
+        scannerbt = scannerBTLE(this, 40000, -100)
         scannerbt!!.intializeScanner()
         scannerbt!!.start()
     }
@@ -67,16 +82,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun printDistinct(){
+//        for (btDevice : BTLEDevice in deviceList.distinct())
+//        {
+//            Log.e("devices Found", btDevice.BTDevice.toString())
+//            Log.e("devices Found", btDevice.RSSI.toString())
+//        }
 
-        for (btDevice : BTLEDevice in deviceList.distinct())
-        {
-            Log.e("devices Found", btDevice.BTDevice.toString())
-            Log.e("devices Found", btDevice.RSSI.toString())
-        }
         val adapter = CustomAdapter(deviceList)
         recyclerView!!.adapter = adapter
     }
-
 
     private val BTGattCallback = object : BluetoothGattCallback()
     {
@@ -105,35 +119,36 @@ class MainActivity : AppCompatActivity() {
           }
         }
 
+
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             super.onServicesDiscovered(gatt, status)
 
+            var characteristicsB : BluetoothGattCharacteristic? = null
+
             servicesList  = gatt?.services as ArrayList<BluetoothGattService>
-            var i : Int = 0
-            var j : Int = 0
-            for (s in servicesList) {
-                for (c in s.characteristics) {
-                    Log.e("services : " + i.toString() + " = ", s.uuid.toString())
-                    Log.e("characteristic : " + j.toString() + " = ", c.uuid.toString())
-                  if(i==3 && j==1)
-                  {
-//                      mBluetoothGatt!!.readCharacteristic(c)
-                      mBluetoothGatt!!.setCharacteristicNotification(c, true)
 
-                      mDescriptor = c.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
-                      mDescriptor!!.value =BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                      mBluetoothGatt!!.writeDescriptor(mDescriptor)
+            if (servicesList.get(3).uuid == UUID.fromString(serviceFour))
+            {
+                Characteristicslist = servicesList.get(3).characteristics
+                characteristicsB = Characteristicslist.get(1)
+                characteristicsA  = Characteristicslist.get(0)
 
-                      Log.e("servicesRead ", s.uuid.toString())
-                      Log.e("characteristicRead ", c.uuid.toString())
-                  }
-                j++
+                if (characteristicsB!!.uuid.equals(  UUID.fromString(characteristicsOne) ))
+                {
+                    //mBluetoothGatt!!.readCharacteristic(c)
+                    mBluetoothGatt!!.setCharacteristicNotification(characteristicsB, true)
+
+                    mDescriptor = characteristicsB.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"))
+                    mDescriptor!!.value =BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                    mBluetoothGatt!!.writeDescriptor(mDescriptor)
+                    //mBluetoothGatt!!.requestMtu(517)  // Maximum transfer unit
+
+
+                   // mBluetoothGatt!!.disconnect()
+
                 }
-                i++
-                j=0
             }
         }
-
 
         override fun onDescriptorRead(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor?, status: Int) {
             super.onDescriptorRead(gatt, descriptor, status)
@@ -143,16 +158,39 @@ class MainActivity : AppCompatActivity() {
 
         override fun onDescriptorWrite(gatt: BluetoothGatt?, descriptor: BluetoothGattDescriptor?, status: Int) {
             super.onDescriptorWrite(gatt, descriptor, status)
-           Log.e("decWrite", descriptor.toString())
+           Log.e("DESCRIPTOR WRITTEN", descriptor.toString())
 
+            if(servicesList != null && Characteristicslist != null) {
+                characteristicsA!!.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                characteristicsA!!.value = commandToWrite
+                mBluetoothGatt!!.writeCharacteristic(characteristicsA)
+                Log.e("Characteristics", characteristicsA!!.uuid.toString())
+            }
+            else
+            {
+                Log.e("Characteristics", "or service is Null")
+            }
         }
-
-
-        var i : Int? = null
 
         override fun onCharacteristicChanged(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?) {
             super.onCharacteristicChanged(gatt, characteristic)
-            Log.e("dataReceivedBt",  Arrays.toString(characteristic!!.value) )
+            Log.e("dataReceivedBt", Arrays.toString(characteristic!!.value))
 
-        }}
+        }
+
+        override fun onCharacteristicWrite(gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?, status: Int) {
+            super.onCharacteristicWrite(gatt, characteristic, status)
+            Log.e("CHARACTERISTICS WRITTEN", "anything "+ if( Arrays.toString(characteristic!!.value) != null) "Null values " else " not null")
+        }
+    }
+
+
+    fun writeCharacteristic(characteristic: BluetoothGattCharacteristic, payload: ByteArray) {
+        mBluetoothGatt?.let { gatt ->
+            //characteristic.writeType = writeType
+            characteristic.writeType = BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE
+            characteristic.value = payload
+            gatt.writeCharacteristic(characteristic)
+        } ?: error("Not connected to a BLE device!")
+    }
 }
